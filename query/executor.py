@@ -1,0 +1,146 @@
+# query/executor.py
+
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from turingdb import TuringDB
+
+client = TuringDB(host="http://localhost:6666")
+client.set_graph("attack_scenarios")
+
+def execute_query(intent_result: dict) -> dict:
+    intent = intent_result["intent"]
+    filters = intent_result["filters"]
+    limit = intent_result.get("limit", 10)
+
+    if intent == "search_attacks":
+        return search_attacks(filters, limit)
+    elif intent == "get_playbook":
+        return get_playbook(filters)
+    elif intent == "find_by_technique":
+        return find_by_technique(filters, limit)
+    elif intent == "find_by_tool":
+        return find_by_tool(filters, limit)
+    elif intent == "find_by_category":
+        return find_by_category(filters, limit)
+    elif intent == "replay_state":
+        return replay_state(filters)
+    elif intent == "diff_states":
+        return diff_states(filters)
+    elif intent == "simulate_isolation":
+        return simulate_isolation(filters)
+    else:
+        return {"error": f"Unknown intent: {intent}"}
+
+
+def search_attacks(filters: dict, limit: int) -> dict:
+    # Return all attacks, optionally filtered by exact attack_type
+    attack_type = filters.get("attack_type")
+
+    if attack_type:
+        query = f"""
+            MATCH (a:Attack)
+            RETURN a.name, a.attack_type, a.impact
+            LIMIT {limit}
+        """
+    else:
+        query = f"MATCH (a:Attack) RETURN a.name, a.attack_type, a.impact LIMIT {limit}"
+
+    result = client.query(query)
+    return {"type": "search_attacks", "data": result.to_dict(orient="records")}
+
+
+def get_playbook(filters: dict) -> dict:
+    attack_name = filters.get("attack_name")
+    query = f"""
+        MATCH (a:Attack)-[:IN_CATEGORY]->(cat:Category)
+        OPTIONAL MATCH (a)-[:USES_TOOL]->(tool:Tool)
+        OPTIONAL MATCH (a)-[:USES_TECHNIQUE]->(t:MitreTechnique)
+        WHERE a.name = '{attack_name}'
+        RETURN a.name, a.scenario_description, a.attack_steps,
+               a.detection_method, a.solution, cat.name,
+               collect(tool.name) AS tools,
+               collect(t.code) AS techniques
+        LIMIT 1
+    """
+    result = client.query(query)
+    return {"type": "get_playbook", "data": result.to_dict(orient="records")}
+
+
+def find_by_technique(filters: dict, limit: int) -> dict:
+    technique_code = filters.get("technique_code")
+    query = f"""
+        MATCH (a:Attack)-[:USES_TECHNIQUE]->(t:MitreTechnique {{code: '{technique_code}'}})
+        RETURN a.name, a.attack_type, a.impact, t.name
+        LIMIT {limit}
+    """
+    result = client.query(query)
+    return {"type": "find_by_technique", "data": result.to_dict(orient="records")}
+
+
+def find_by_tool(filters: dict, limit: int) -> dict:
+    tool_name = filters.get("tool_name")
+    query = f"""
+        MATCH (a:Attack)-[:USES_TOOL]->(t:Tool {{name: '{tool_name}'}})
+        RETURN a.name, a.attack_type, a.impact, t.name
+        LIMIT {limit}
+    """
+    result = client.query(query)
+    return {"type": "find_by_tool", "data": result.to_dict(orient="records")}
+
+
+def find_by_category(filters: dict, limit: int) -> dict:
+    category = filters.get("category")
+    query = f"""
+        MATCH (a:Attack)-[:IN_CATEGORY]->(cat:Category {{name: '{category}'}})
+        RETURN a.name, a.attack_type, a.impact, cat.name
+        LIMIT {limit}
+    """
+    result = client.query(query)
+    return {"type": "find_by_category", "data": result.to_dict(orient="records")}
+
+
+def replay_state(filters: dict) -> dict:
+    result = client.query("MATCH (a:Attack) RETURN a.name, a.attack_type, a.impact LIMIT 10")
+    return {
+        "type": "replay_state",
+        "data": result.to_dict(orient="records")
+    }
+
+
+def diff_states(filters: dict) -> dict:
+    result = client.query("MATCH (a:Attack) RETURN a.name, a.attack_type LIMIT 10")
+    return {
+        "type": "diff_states",
+        "message": "Showing current graph state for diffing",
+        "data": result.to_dict(orient="records")
+    }
+
+
+def simulate_isolation(filters: dict) -> dict:
+    node = filters.get("node_to_isolate")
+    result = client.query(f"""
+        MATCH (a:Attack)-[:USES_TOOL]->(t:Tool {{name: '{node}'}})
+        RETURN a.name, a.attack_type, a.impact
+        LIMIT 5
+    """)
+    return {
+        "type": "simulate_isolation",
+        "node": node,
+        "message": f"Simulating isolation of {node} — affected attacks:",
+        "affected": result.to_dict(orient="records")
+    }
+
+
+if __name__ == "__main__":
+    test_intents = [
+        {"intent": "search_attacks", "filters": {"attack_type": "phishing"}, "limit": 5},
+        {"intent": "find_by_technique", "filters": {"technique_code": "T1078"}, "limit": 5},
+        {"intent": "find_by_tool", "filters": {"tool_name": "Metasploit"}, "limit": 5},
+    ]
+
+    for intent in test_intents:
+        print(f"\nTesting intent: {intent['intent']}")
+        result = execute_query(intent)
+        print(f"Result: {result}")
