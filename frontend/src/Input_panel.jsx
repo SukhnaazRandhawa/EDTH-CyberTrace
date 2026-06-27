@@ -1,8 +1,16 @@
-import { useState } from 'react'
+import { useState,useEffect } from 'react'
 
 function InputPanel({onResult, lang, compact}) {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
+  
+  useEffect(() => {
+    function handle_fill(e) {
+      setQuery(e.detail)
+    }
+    window.addEventListener('fill_query', handle_fill)
+    return () => window.removeEventListener('fill_query', handle_fill)
+  }, [])
 
   async function handleSubmit() {
     if (!query) return
