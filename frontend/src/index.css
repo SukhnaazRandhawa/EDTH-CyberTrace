@@ -1,0 +1,12 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: #1a1a1a;
+  color: #fff;
+  font-family: sans-serif;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
