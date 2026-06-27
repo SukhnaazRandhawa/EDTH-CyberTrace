@@ -3,7 +3,7 @@ import { useState,useEffect } from 'react'
 function InputPanel({onResult, lang, compact}) {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
-  
+
   useEffect(() => {
     function handle_fill(e) {
       setQuery(e.detail)
@@ -13,32 +13,37 @@ function InputPanel({onResult, lang, compact}) {
   }, [])
 
   async function handleSubmit() {
-    if (!query) return
-    setLoading(true)
+  if (!query) return
+  setLoading(true)
 
-    // mock data for now until N's backend is ready
-    const mock_result = {
-      intent: 'diff_states',
-      data: {
-        added: ['malicious_script', 'backdoor_user', 'exfil_endpoint'],
-        removed: ['old_session_token'],
-        modified: ['database_c', 'admin_account']
-      },
-      timestamp1: '14:00',
-      timestamp2: '16:00'
+  const USE_MOCK = false   // backend is live
+
+  let result
+  try {
+    if (USE_MOCK) {
+      result = {
+        type: 'search_attacks',
+        data: [
+          {'a.name': 'SQL Injection Attack', 'a.attack_type': 'Injection', 'a.impact': 'Data breach'}
+        ]
+      }
+    } else {
+      const res = await fetch('http://localhost:5001/query', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({query})
+      })
+      if (!res.ok) throw new Error(`server returned ${res.status}`)
+      result = await res.json()
     }
 
-    // TODO: replace with real API call
-    // const res = await fetch('http://localhost:8000/query', {
-    //   method: 'POST',
-    //   headers: {'Content-Type':'application/json'},
-    //   body: JSON.stringify({query, lang})
-    // })
-    // const mock_result = await res.json()
-
+    onResult(result)
+  } catch (err) {
+    onResult({type: 'error', message: err.message})
+  } finally {
     setLoading(false)
-    onResult(mock_result)
   }
+}
 
   const placeholder = lang === 'UK'
     ? 'введіть запит українською...'

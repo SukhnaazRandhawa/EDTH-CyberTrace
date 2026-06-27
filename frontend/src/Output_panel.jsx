@@ -48,7 +48,13 @@ function render_by_intent(intent, data) {
 
     case 'simulate_isolation':
       return <Isolation node={data.node} affected={data.affected} message={data.message} />
-
+    case 'error':
+    return (
+      <div style={{padding:'12px', background:'#3a1f1f', border:'1px solid #f87171', borderRadius:'4px'}}>
+        <p style={{margin:0, color:'#f87171'}}>⚠ {data.message || 'something went wrong'}</p>
+        <p style={{margin:'4px 0 0 0', opacity:0.6, fontSize:'13px'}}>check that N's backend is running on port 8000</p>
+      </div>
+    )
     default:
       return <pre style={{opacity:0.5}}>{JSON.stringify(data, null, 2)}</pre>
   }
