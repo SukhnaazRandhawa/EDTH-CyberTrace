@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-function InputPanel({onResult}) {
+function InputPanel({onResult, lang, compact}) {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -10,20 +10,21 @@ function InputPanel({onResult}) {
 
     // mock data for now until N's backend is ready
     const mock_result = {
-    intent: 'diff_states',
-    data: {
+      intent: 'diff_states',
+      data: {
         added: ['malicious_script', 'backdoor_user', 'exfil_endpoint'],
         removed: ['old_session_token'],
         modified: ['database_c', 'admin_account']
-        },
-    timestamp1: '14:00',
-    timestamp2: '16:00'
+      },
+      timestamp1: '14:00',
+      timestamp2: '16:00'
     }
 
-    // TODO: replace mock with real API call to N's backend
+    // TODO: replace with real API call
     // const res = await fetch('http://localhost:8000/query', {
     //   method: 'POST',
-    //   body: JSON.stringify({query})
+    //   headers: {'Content-Type':'application/json'},
+    //   body: JSON.stringify({query, lang})
     // })
     // const mock_result = await res.json()
 
@@ -31,20 +32,37 @@ function InputPanel({onResult}) {
     onResult(mock_result)
   }
 
+  const placeholder = lang === 'UK'
+    ? 'введіть запит українською...'
+    : 'enter your query in english...'
+
   return (
-    <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+    <div style={{display:'flex', flexDirection:'column', gap:'12px', marginBottom: compact ? '30px' : 0}}>
       <textarea
         value={query}
         onChange={e => setQuery(e.target.value)}
-        placeholder='введіть запит українською...'
-        style={{width:'100%', height:'80px', padding:'10px', fontSize:'16px'}}
+        placeholder={placeholder}
+        style={{
+          width:'100%',
+          height: compact ? '60px' : '120px',
+          padding:'14px',
+          fontSize:'15px'
+        }}
       />
       <button
         onClick={handleSubmit}
         disabled={loading}
-        style={{width:'150px', padding:'10px', fontSize:'16px'}}
+        style={{
+          alignSelf:'flex-end',
+          padding:'10px 24px',
+          fontSize:'14px',
+          background: loading ? '#1e293b' : '#22d3ee',
+          color: loading ? '#e2e8f0' : '#0a1628',
+          borderColor: '#22d3ee',
+          fontWeight: 'bold'
+        }}
       >
-        {loading ? 'loading...' : 'search'}
+        {loading ? 'searching...' : '> search'}
       </button>
     </div>
   )

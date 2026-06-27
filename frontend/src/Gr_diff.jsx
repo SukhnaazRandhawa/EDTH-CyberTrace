@@ -53,22 +53,27 @@ function SingleGraph({data, mode}) {
           style: {
             'label': 'data(label)',
             'background-color': 'data(color)',
-            'color': '#fff',
-            'text-valign': 'center',
-            'text-halign': 'center',
-            'font-size': '10px',
-            'width': 40,
-            'height': 40
+            'border-width': 3,
+            'border-color': '#0a1628',
+            'color': '#e2e8f0',
+            'text-valign': 'bottom',
+            'text-margin-y': 8,
+            'font-size': '11px',
+            'font-family': 'Consolas, monospace',
+            'font-weight': 'bold',
+            'width': 50,
+            'height': 50
           }
         },
         {
           selector: 'edge',
           style: {
             'width': 2,
-            'line-color': '#666',
-            'target-arrow-color': '#666',
+            'line-color': '#22d3ee',
+            'opacity': 0.6,
+            'target-arrow-color': '#22d3ee',
             'target-arrow-shape': 'triangle',
-            'curve-style': 'bezier'
+            'curve-style': 'straight'
           }
         }
       ],
@@ -95,7 +100,7 @@ function SingleGraph({data, mode}) {
         {mode === 'after' && `after: ${data.timestamp2}`}
         {mode === 'diff' && 'combined diff view'}
       </p>
-      <div ref={container_ref} style={{width:'100%', height:'400px', background:'#0a0a0a', borderRadius:'6px'}} />
+      <div ref={container_ref} style={{width:'100%', height:'400px', background:'#020912', borderRadius:'6px'}} />
     </div>
   )
 }
