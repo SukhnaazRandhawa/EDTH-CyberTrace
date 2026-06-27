@@ -102,19 +102,68 @@ def find_by_category(filters: dict, limit: int) -> dict:
 
 
 def replay_state(filters: dict) -> dict:
-    result = client.query("MATCH (a:Attack) RETURN a.name, a.attack_type, a.impact LIMIT 10")
+    history = client.query("CALL db.history()")
+    commits = history.to_dict(orient="records")
+
+    # Get commit hashes (strip HEAD marker)
+    commit_new = commits[0]["commit"].replace("(HEAD)", "").strip()
+    commit_old = commits[1]["commit"].replace("(HEAD)", "").strip()
+
+    # Get current state
+    current_result = client.query("MATCH (a:Attack) RETURN a.name, a.attack_type, a.impact LIMIT 10")
+    current_data = current_result.to_dict(orient="records")
+
+    # Time travel to past commit without reloading the graph
+    client.set_graph("attack_scenarios")
+    client.checkout(commit=commit_old)
+    past_result = client.query("MATCH (a:Attack) RETURN a.name, a.attack_type, a.impact LIMIT 10")
+    past_data = past_result.to_dict(orient="records")
+
+    # Return to current HEAD
+    client.checkout()
+    client.set_graph("attack_scenarios")
+
     return {
         "type": "replay_state",
-        "data": result.to_dict(orient="records")
+        "past_commit": commit_old,
+        "current_commit": commit_new,
+        "past_data": past_data,
+        "current_data": current_data,
+        "message": f"Replayed state from commit {commit_old}"
     }
 
 
 def diff_states(filters: dict) -> dict:
-    result = client.query("MATCH (a:Attack) RETURN a.name, a.attack_type LIMIT 10")
+    history = client.query("CALL db.history()")
+    commits = history.to_dict(orient="records")
+
+    commit_new = commits[0]["commit"].replace("(HEAD)", "").strip()
+    commit_old = commits[1]["commit"].replace("(HEAD)", "").strip()
+
+    # Get ALL attack names from current state
+    new_result = client.query("MATCH (a:Attack) RETURN a.name, a.attack_type")
+    new_names = set(new_result["a.name"].tolist())
+
+    # Time travel to past commit
+    client.set_graph("attack_scenarios")
+    client.checkout(commit=commit_old)
+    old_result = client.query("MATCH (a:Attack) RETURN a.name, a.attack_type")
+    old_names = set(old_result["a.name"].tolist())
+
+    # Return to HEAD
+    client.checkout()
+    client.set_graph("attack_scenarios")
+
+    added = list(new_names - old_names)
+    removed = list(old_names - new_names)
+
     return {
         "type": "diff_states",
-        "message": "Showing current graph state for diffing",
-        "data": result.to_dict(orient="records")
+        "commit_old": commit_old,
+        "commit_new": commit_new,
+        "added": added,
+        "removed": removed,
+        "message": f"{len(added)} new attacks detected since last snapshot"
     }
 
 
