@@ -1,4 +1,4 @@
-import { useState,useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 function InputPanel({onResult, lang, compact}) {
   const [query, setQuery] = useState('')
@@ -31,7 +31,8 @@ function InputPanel({onResult, lang, compact}) {
       const res = await fetch('http://localhost:5001/query', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({query})
+        //body: JSON.stringify({query})
+        body: JSON.stringify({query, lang})
       })
       if (!res.ok) throw new Error(`server returned ${res.status}`)
       result = await res.json()
