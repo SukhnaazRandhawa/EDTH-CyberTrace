@@ -12,14 +12,17 @@ question about cyber attacks and extract structured information from it.
 
 You must respond ONLY with a JSON object in this exact format:
 {
-    "intent": "search_attacks" | "get_playbook" | "find_by_technique" | "find_by_tool" | "find_by_category",
+    "intent": "search_attacks" | "get_playbook" | "find_by_technique" | "find_by_tool" | "find_by_category" | "replay_state" | "diff_states" | "simulate_isolation",
     "filters": {
         "attack_name": "string or null",
         "attack_type": "string or null",
         "technique_code": "string or null",
         "tool_name": "string or null",
         "category": "string or null",
-        "keyword": "string or null"
+        "keyword": "string or null",
+        "timestamp1": "string or null",
+        "timestamp2": "string or null",
+        "node_to_isolate": "string or null"
     },
     "limit": 10
 }
@@ -45,6 +48,9 @@ if __name__ == "__main__":
         "Give me the full playbook for SQL injection",
         "What attacks use technique T1078?",
         "Which attacks use Metasploit?",
+        "What did the network look like before the breach?",
+        "What changed between 2pm and 4pm?",
+        "What happens if I isolate Server A?",
     ]
     
     for query in test_queries:
