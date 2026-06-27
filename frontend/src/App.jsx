@@ -14,12 +14,18 @@ function App() {
         display:'flex', justifyContent:'space-between', alignItems:'center',
         padding:'20px 30px', borderBottom:'1px solid #1e3a5f'
       }}>
-        <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+        <div
+        onClick={() => setResult(null)}
+        style={{display:'flex', alignItems:'center', gap:'10px', cursor:'pointer'}}
+        >
           <div style={{width:'10px', height:'10px', background:'#22d3ee', borderRadius:'50%', boxShadow:'0 0 10px #22d3ee'}} />
           <h2 style={{margin:0, color:'#22d3ee'}}>CyberTrace</h2>
         </div>
 
-        <LangToggle lang={lang} setLang={setLang} />
+        <LangToggle lang={lang} setLang={(newLang) => {
+          setLang(newLang)
+          setResult(null)
+        }} />
       </div>
 
       {/* main content */}
